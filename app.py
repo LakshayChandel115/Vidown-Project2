@@ -338,21 +338,25 @@ def start_download():
 @app.route('/status/<task_id>')
 def check_status(task_id):
     task = download_video.AsyncResult(task_id)
-    if task.state == 'PENDING':
-        response = {
-            'state': task.state,
-            'status': 'Pending...'
-        }
-    elif task.state != 'FAILURE':
-        response = {
-            'state': task.state,
-            'result': task.result
-        }
-    else:
-        response = {
-            'state': task.state,
-            'status': str(task.info)
-        }
+    response = {
+        'state': task.state,
+        'status': 'Unknown status'
+    }
+    
+    try:
+        if task.state == 'PENDING':
+            response['status'] = 'Download starting...'
+        elif task.state == 'SUCCESS':
+            if task.result.get('status') == 'success':
+                response['status'] = task.result.get('message')
+        elif task.state == 'FAILURE':
+            response['status'] = str(task.result)
+        else:
+            response['status'] = 'Download in progress...'
+    except Exception as e:
+        response['state'] = 'FAILURE'
+        response['status'] = str(e)
+    
     return jsonify(response)
 
 if __name__ == '__main__':
