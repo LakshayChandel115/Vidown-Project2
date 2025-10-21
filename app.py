@@ -1,5 +1,5 @@
-from flask import Flask, request, jsonify, render_template
-from tasks import download_video
+from flask import Flask, request, jsonify, send_file
+from tasks import download_video, download_records
 
 app = Flask(__name__)
 
@@ -9,277 +9,131 @@ def home():
     <!DOCTYPE html>
     <html>
     <head>
-        <title>V-Down - Video Downloader</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Video Downloader</title>
         <style>
-            * {
-                margin: 0;
-                padding: 0;
-                box-sizing: border-box;
-            }
-            
             body {
-                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                min-height: 100vh;
-                display: flex;
-                justify-content: center;
-                align-items: center;
+                font-family: Arial, sans-serif;
+                max-width: 800px;
+                margin: 0 auto;
                 padding: 20px;
-
-            }
-            .copyright-notice {
-                color: #dc3545;
-                font-size: 0.9em;
-                margin-top: 10px;
-                padding: 8px;
-                border: 1px solid #dc3545;
-                border-radius: 8px;
-                background-color: rgba(220, 53, 69, 0.1);
-                display: inline-block;
+                background-color: #f5f5f5;
             }
             .container {
-                background: white;
-                border-radius: 20px;
-                box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-                padding: 50px;
-                max-width: 600px;
-                width: 100%;
-                animation: fadeIn 0.5s ease-in;
+                background-color: white;
+                padding: 20px;
+                border-radius: 8px;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             }
-            
-            @keyframes fadeIn {
-                from {
-                    opacity: 0;
-                    transform: translateY(20px);
-                }
-                to {
-                    opacity: 1;
-                    transform: translateY(0);
-                }
-            }
-            
-            .header {
-                text-align: center;
-                margin-bottom: 40px;
-            }
-            
-            .header h1 {
-                color: #333;
-                font-size: 2.5em;
-                margin-bottom: 10px;
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                -webkit-background-clip: text;
-                -webkit-text-fill-color: transparent;
-                background-clip: text;
-            }
-            
-            .header .icon {
-                font-size: 3em;
+            .form-group {
                 margin-bottom: 15px;
             }
-            
-            .header p {
-                color: #666;
-                font-size: 1.1em;
-            }
-            
-            .form-group {
-                margin-bottom: 30px;
-            }
-            
-            .form-group label {
-                display: block;
-                color: #333;
-                font-weight: 600;
-                margin-bottom: 12px;
-                font-size: 1em;
-            }
-            
-            .form-group input,
-            .form-group select {
+            input[type="text"], select {
                 width: 100%;
-                padding: 15px 20px;
-                border: 2px solid #e0e0e0;
-                border-radius: 12px;
-                font-size: 1em;
-                transition: all 0.3s ease;
-                background: #f8f9fa;
+                padding: 8px;
+                margin: 5px 0;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+                box-sizing: border-box;
             }
-            
-            .form-group input:focus,
-            .form-group select:focus {
-                outline: none;
-                border-color: #667eea;
-                background: white;
-                box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
-            }
-            
-            .form-group input::placeholder {
-                color: #aaa;
-            }
-            
             .download-btn {
-                width: 100%;
-                padding: 18px;
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                background-color: #4CAF50;
                 color: white;
-                border: blue;
-                border-radius: 12px;
-                font-size: 1.1em;
-                font-weight: 600;
+                padding: 10px 20px;
+                border: none;
+                border-radius: 4px;
                 cursor: pointer;
-                transition: all 0.3s ease;
-                margin-top: 10px;
-                box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+                font-size: 16px;
             }
-            
             .download-btn:hover {
-                transform: translateY(-2px);
-                box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+                background-color: #45a049;
             }
-            
-            .download-btn:active {
-                transform: translateY(0);
-            }
-            
-            .download-btn:disabled {
-                opacity: 0.7;
-                cursor: not-allowed;
-                transform: none;
-            }
-            
-            .download-btn:disabled:hover {
-                transform: none;
-                box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
-            }
-            
-            .btn-loader {
-                display: inline-block;
-                width: 14px;
-                height: 14px;
-                border: 2px solid rgba(255, 255, 255, 0.3);
-                border-top-color: white;
-                border-radius: 50%;
-                animation: spin 0.8s linear infinite;
-                margin-right: 8px;
-                vertical-align: middle;
-            }
-            
             #status-message {
-                margin-top: 30px;
-                padding: 20px;
-                border-radius: 12px;
-                text-align: center;
-                font-weight: 500;
-                display: none;
-                animation: slideIn 0.3s ease;
+                margin-top: 20px;
+                padding: 10px;
+                border-radius: 4px;
             }
-            
-            @keyframes slideIn {
-                from {
-                    opacity: 0;
-                    transform: translateY(-10px);
-                }
-                to {
-                    opacity: 1;
-                    transform: translateY(0);
-                }
-            }
-            
             .success {
-                background-color: #d4edda;
-                color: #155724;
-                border: 2px solid #c3e6cb;
-                display: block;
+                background-color: #dff0d8;
+                color: #3c763d;
+                border: 1px solid #d6e9c6;
             }
-            
             .pending {
-                background-color: #fff3cd;
-                color: #856404;
-                border: 2px solid #ffeaa7;
-                display: block;
+                background-color: #fcf8e3;
+                color: #8a6d3b;
+                border: 1px solid #faebcc;
             }
-            
-            .error {
-                background-color: #f8d7da;
-                color: #721c24;
-                border: 2px solid #f5c6cb;
-                display: block;
+            .warning {
+                color: #dc3545;
+                padding: 10px;
+                border: 1px solid #dc3545;
+                border-radius: 4px;
+                margin-bottom: 20px;
+                background-color: #fff8f8;
             }
-            
-            .loader {
+            .note {
+                color: #0056b3;
+                font-size: 0.9em;
+                margin-top: 10px;
+            }
+            .download-link {
+                margin-top: 15px;
+                text-align: center;
+            }
+            .download-button {
                 display: inline-block;
-                width: 16px;
-                height: 16px;
-                border: 3px solid rgba(0, 0, 0, 0.1);
-                border-top-color: #856404;
-                border-radius: 50%;
-                animation: spin 0.8s linear infinite;
-                margin-right: 8px;
-                vertical-align: middle;
+                padding: 10px 20px;
+                background-color: #007bff;
+                color: white;
+                text-decoration: none;
+                border-radius: 4px;
+                margin-top: 10px;
             }
-            
-            @keyframes spin {
-                to { transform: rotate(360deg); }
-            }
-            
-            @media (max-width: 600px) {
-                .container {
-                    padding: 30px 25px;
-                }
-                
-                .header h1 {
-                    font-size: 2em;
-                }
-                
-                .header .icon {
-                    font-size: 2.5em;
-                }
+            .download-button:hover {
+                background-color: #0056b3;
             }
         </style>
     </head>
     <body>
         <div class="container">
-            <div class="header">
-                <div class="icon">🎥</div>
-                <h1>V-Down</h1>
-                <p>Download videos in your preferred quality</p>
-                <!-- This is new line for copyright. -->
-                <p class="copyright-notice">⚠️ Use only for public domain videos or with permission. Respect copyright laws. ⚠️</p>
+            <h1>🎥 Video Downloader</h1>
+            <div class="warning">
+                ⚠️ Use only for public domain/own content or when you have rights.
             </div>
-            
-            <form id="download-form" action="/download" method="post">
+            <div class="note">
+                📝 Note: Downloaded files will be available for 30 minutes only.
+            </div>
+            <form id="download-form">
                 <div class="form-group">
-                    <label for="url">📎 Video URL</label>
-                    <input type="text" id="url" name="url" placeholder="Paste your video URL here..." required>
+                    <label for="url">Video URL:</label>
+                    <input type="text" id="url" name="url" placeholder="Enter video URL" required>
                 </div>
-                
                 <div class="form-group">
-                    <label for="quality">⚙️ Select Quality</label>
+                    <label for="quality">Select Quality:</label>
                     <select id="quality" name="quality" required>
                         <option value="1">Best Quality (1080p or higher)</option>
-                        <option value="2">High Quality (720p)</option>
-                        <option value="3">Medium Quality (480p)</option>
-                        <option value="4">Low Quality (360p)</option>
+                        <option value="2">720p</option>
+                        <option value="3">480p</option>
+                        <option value="4">360p</option>
                     </select>
                 </div>
-                
-                <button type="submit" class="download-btn" id="download-btn">Download Video</button>
+                <button type="submit" class="download-btn">Download Video</button>
             </form>
-            
             <div id="status-message"></div>
+            <div id="download-link" class="download-link"></div>
         </div>
 
         <script>
         document.getElementById('download-form').onsubmit = function(e) {
             e.preventDefault();
-            const formData = new FormData(this);
-            const btn = document.getElementById('download-btn');
+            const statusMessage = document.getElementById('status-message');
+            const downloadLink = document.getElementById('download-link');
             
-            // Change button to "Downloading..."
-            btn.disabled = true;
-            btn.innerHTML = '<span class="btn-loader"></span>Downloading...';
+            statusMessage.style.display = 'block';
+            statusMessage.innerHTML = 'Starting download...';
+            statusMessage.className = 'pending';
+            downloadLink.innerHTML = '';
+            
+            const formData = new FormData(this);
             
             fetch('/download', {
                 method: 'POST',
@@ -288,51 +142,43 @@ def home():
             .then(response => response.text())
             .then(data => {
                 const taskId = data.split(': ')[1];
-                document.getElementById('status-message').innerHTML = '<span class="loader"></span>Download in progress...';
-                document.getElementById('status-message').className = 'pending';
-                checkStatus(taskId, btn);
+                checkStatus(taskId);
             })
             .catch(error => {
-                document.getElementById('status-message').innerHTML = '❌ Failed to start download';
-                document.getElementById('status-message').className = 'error';
-                // Reset button
-                btn.disabled = false;
-                btn.innerHTML = 'Download Video';
+                statusMessage.innerHTML = '❌ Failed to start download';
+                statusMessage.className = 'error';
             });
         };
 
-        function checkStatus(taskId, btn) {
+        function checkStatus(taskId) {
+            const statusMessage = document.getElementById('status-message');
+            const downloadLink = document.getElementById('download-link');
+            
             fetch(`/status/${taskId}`)
             .then(response => response.json())
             .then(data => {
                 if (data.state === 'SUCCESS') {
-                    document.getElementById('status-message').innerHTML = '✅ Download completed successfully!';
-                    document.getElementById('status-message').className = 'success';
-                    // Change button to "Download Successful"
-                    btn.innerHTML = '✅ Download Successful';
-                    // Reset button after 3 seconds
-                    setTimeout(() => {
-                        btn.disabled = false;
-                        btn.innerHTML = 'Download Video';
-                    }, 3000);
+                    statusMessage.innerHTML = '✅ Download completed!';
+                    statusMessage.className = 'success';
+                    if (data.result && data.result.file_id) {
+                        downloadLink.innerHTML = `
+                            <a href="/download/${data.result.file_id}" class="download-button">
+                                Download ${data.result.title || 'Video'}
+                            </a>
+                            <p class="note">Link expires in 30 minutes</p>`;
+                    }
                 } else if (data.state === 'FAILURE') {
-                    document.getElementById('status-message').innerHTML = '❌ Download failed: ' + data.status;
-                    document.getElementById('status-message').className = 'error';
-                    // Reset button
-                    btn.disabled = false;
-                    btn.innerHTML = 'Download Video';
+                    statusMessage.innerHTML = '❌ Download failed: ' + data.status;
+                    statusMessage.className = 'error';
                 } else {
-                    document.getElementById('status-message').innerHTML = '<span class="loader"></span>Downloading...';
-                    document.getElementById('status-message').className = 'pending';
-                    setTimeout(() => checkStatus(taskId, btn), 2000);
+                    statusMessage.innerHTML = '⏳ Downloading video...';
+                    statusMessage.className = 'pending';
+                    setTimeout(() => checkStatus(taskId), 2000);
                 }
             })
             .catch(error => {
-                document.getElementById('status-message').innerHTML = '❌ Error checking status';
-                document.getElementById('status-message').className = 'error';
-                // Reset button
-                btn.disabled = false;
-                btn.innerHTML = 'Download Video';
+                statusMessage.innerHTML = '❌ Error checking status';
+                statusMessage.className = 'error';
             });
         }
         </script>
@@ -359,8 +205,7 @@ def check_status(task_id):
         if task.state == 'PENDING':
             response['status'] = 'Download starting...'
         elif task.state == 'SUCCESS':
-            if task.result.get('status') == 'success':
-                response['status'] = task.result.get('message')
+            response['result'] = task.result
         elif task.state == 'FAILURE':
             response['status'] = str(task.result)
         else:
@@ -370,6 +215,17 @@ def check_status(task_id):
         response['status'] = str(e)
     
     return jsonify(response)
+
+@app.route('/download/<file_id>')
+def download_file(file_id):
+    if file_id in download_records:
+        record = download_records[file_id]
+        return send_file(
+            record['path'],
+            as_attachment=True,
+            download_name=f"{record['title']}.{record['extension']}"
+        )
+    return "File not found or expired", 404
 
 if __name__ == '__main__':
     app.run(debug=True)
