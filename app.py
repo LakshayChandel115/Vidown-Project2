@@ -26,8 +26,18 @@ def home():
                 justify-content: center;
                 align-items: center;
                 padding: 20px;
+
             }
-            
+            .copyright-notice {
+                color: #dc3545;
+                font-size: 0.9em;
+                margin-top: 10px;
+                padding: 8px;
+                border: 1px solid #dc3545;
+                border-radius: 8px;
+                background-color: rgba(220, 53, 69, 0.1);
+                display: inline-block;
+            }
             .container {
                 background: white;
                 border-radius: 20px;
@@ -114,7 +124,7 @@ def home():
                 padding: 18px;
                 background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
                 color: white;
-                border: none;
+                border: blue;
                 border-radius: 12px;
                 font-size: 1.1em;
                 font-weight: 600;
@@ -235,6 +245,8 @@ def home():
                 <div class="icon">🎥</div>
                 <h1>V-Down</h1>
                 <p>Download videos in your preferred quality</p>
+                <!-- This is new line for copyright. -->
+                <p class="copyright-notice">⚠️ Use only for public domain videos or with permission. Respect copyright laws. ⚠️</p>
             </div>
             
             <form id="download-form" action="/download" method="post">
