@@ -1,0 +1,6 @@
+Flask
+gunicorn
+celery
+redis
+yt-dlp
+requests
