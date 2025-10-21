@@ -5,13 +5,25 @@ from celery import Celery
 from time import sleep
 import yt_dlp
 import os
+import uuid
+from datetime import datetime,timedelta
 #We are using redis as message broker and backend both.
 
 app = Celery('tasks', broker='redis://localhost:6379/0', backend='redis://localhost:6379/0')
 
+#Store file information 
+download_records = {}
+
 @app.task
 def download_video(video_url, quality_choice):
     try:
+        # Generate unique ID for this download
+        file_id = str(uuid.uuid4())
+        
+        # Set download folder path (temporary storage on render)
+        download_path = os.path.join('temp_downloads', file_id)
+        os.makedirs(download_path, exist_ok=True)
+
         # Map quality choice to format
         quality_mapping = {
             '1': 'best',
@@ -22,13 +34,6 @@ def download_video(video_url, quality_choice):
         
         selected_format = quality_mapping.get(str(quality_choice), 'best')
         
-        # Set download folder path
-        download_path = r"C:\Users\Chetram\Videos\videos_folder"
-        
-        # Create download directory if it doesn't exist
-        if not os.path.exists(download_path):
-            os.makedirs(download_path)
-        
         # Configure yt-dlp options
         ydl_opts = {
             'format': selected_format,
@@ -38,20 +43,42 @@ def download_video(video_url, quality_choice):
             'no_warnings': False
         }
         
-        # Create yt-dlp object and download
+         # Download the video
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            print("Starting download...")
-            ydl.download([video_url])
-            
-        print("Download completed successfully!")
-        print(f"Video saved to: {download_path}")
-        return {'status': 'success', 'message': 'Download completed successfully!'}
+            info = ydl.extract_info(video_url, download=True)
+            video_title = info['title']
+            downloaded_file = os.path.join(download_path, f"{video_title}.{info['ext']}")
+        
+        # Store download information
+        download_records[file_id] = {
+            'path': downloaded_file,
+            'title': video_title,
+            'timestamp': datetime.now(),
+            'extension': info['ext']
+        }
+        # Schedule cleanup task
+        cleanup_file.apply_async((file_id,), countdown=1800)  # 30 minutes
+        
+        return {
+            'status': 'success',
+            'message': 'Download completed successfully!',
+            'file_id': file_id,
+            'title': video_title
+        }
         
     except Exception as e:
-        error_message = str(e)
-        print(f"An error occurred: {error_message}")
-        raise Exception(error_message)  # Re-raise the exception for Celery to handle
-
+        raise Exception(str(e))
+    
+    
+@app.task
+def cleanup_file(file_id):
+    if file_id in download_records:
+        file_path = download_records[file_id]['path']
+        if os.path.exists(file_path):
+            os.remove(file_path)
+            # Remove parent directory
+            os.rmdir(os.path.dirname(file_path))
+        del download_records[file_id]
 
         
 if __name__ == "__main__":
