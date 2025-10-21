@@ -9,7 +9,10 @@ import uuid
 from datetime import datetime,timedelta
 #We are using redis as message broker and backend both.
 
-app = Celery('tasks', broker='redis://localhost:6379/0', backend='redis://localhost:6379/0')
+app = Celery('tasks',
+             broker='redis-cli --tls -u redis://default:AU1xAAIncDIyYTQwZTQwODliYjc0YTI1OGQ5Y2ExMDg3ZmNiODZlOHAyMTk4MjU@trusted-woodcock-19825.upstash.io:6379', 
+             backend='redis-cli --tls -u redis://default:AU1xAAIncDIyYTQwZTQwODliYjc0YTI1OGQ5Y2ExMDg3ZmNiODZlOHAyMTk4MjU@trusted-woodcock-19825.upstash.io:6379'
+             )
 
 #Store file information 
 download_records = {}
