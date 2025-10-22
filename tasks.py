@@ -9,7 +9,7 @@ import uuid
 from datetime import datetime,timedelta
 
 # Fix Redis URL format - remove redis-cli --tls -u part
-redis_url = 'redis://default:AU1xAAIncDIyYTQwZTQwODliYjc0YTI1OGQ5Y2ExMDg3ZmNiODZlOHAyMTk4MjU@trusted-woodcock-19825.upstash.io:6379'
+redis_url = r'rediss://default:AU1xAAIncDIyYTQwZTQwODliYjc0YTI1OGQ5Y2ExMDg3ZmNiODZlOHAyMTk4MjU@trusted-woodcock-19825.upstash.io:6379'
 
 #We are using redis as message broker and backend both.
 
