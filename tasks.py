@@ -27,13 +27,11 @@ def download_video(video_url, quality_choice):
         # Generate unique ID for this download
         file_id = str(uuid.uuid4())
         
-        #Create base download directory if it does not exist
-        base_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'downloads')
-        if not os.path.exists(base_path):
-            os.makedirs(base_path)
+        # Use just one consistent path
+        base_path = os.path.join(os.getcwd(), 'temp_downloads')
+        download_path = os.path.join(base_path, file_id)
         
-        # Set download folder path (temporary storage on render)
-        download_path = os.path.join('temp_downloads', file_id)
+       
         os.makedirs(download_path, exist_ok=True)
 
         # Map quality choice to format
@@ -45,15 +43,15 @@ def download_video(video_url, quality_choice):
         }
         
         selected_format = quality_mapping.get(str(quality_choice), 'best')
-        
-        # Configure yt-dlp options
+         # Update ydl_opts with absolute path
         ydl_opts = {
             'format': selected_format,
-            'outtmpl': f'{download_path}/%(title)s.%(ext)s',
+            'outtmpl': os.path.join(download_path, '%(title)s.%(ext)s'),
             'progress_hooks': [lambda d: print(f"Downloading...: {d.get('_percent_str','0%')} of {d.get('_total_bytes_str', 'unknown size')}")],
             'quiet': False,
             'no_warnings': False
         }
+     
         
          # Download the video
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
