@@ -6,17 +6,33 @@ from time import sleep
 import yt_dlp
 import os
 import uuid
-from datetime import datetime,timedelta
+import ssl
+from datetime import datetime, timedelta
 
-# Fix Redis URL format - remove redis-cli --tls -u part
-redis_url = r'rediss://default:AU1xAAIncDIyYTQwZTQwODliYjc0YTI1OGQ5Y2ExMDg3ZmNiODZlOHAyMTk4MjU@trusted-woodcock-19825.upstash.io:6379'
+# Create Celery instance first
+app = Celery('tasks')
 
-#We are using redis as message broker and backend both.
+# Configure Celery with all settings at once
 
-app = Celery('tasks',
-             broker=redis_url,
-             backend=redis_url
-             )
+app.conf.update(
+    # Broker and backend URLs with proper URL encoding and default username
+    broker_url='rediss://default:AU1xAAIncDIyYTQwZTQwODliYjc0YTI1OGQ5Y2ExMDg3ZmNiODZlOHAyMTk4MjU@trusted-woodcock-19825.upstash.io:6379/0',
+    result_backend='rediss://default:AU1xAAIncDIyYTQwZTQwODliYjc0YTI1OGQ5Y2ExMDg3ZmNiODZlOHAyMTk4MjU@trusted-woodcock-19825.upstash.io:6379/0',
+    
+    # SSL settings with proper configuration
+    broker_use_ssl={
+        'ssl_cert_reqs': ssl.CERT_NONE,
+        'ssl_ca_certs': None
+    },
+    redis_backend_use_ssl={
+        'ssl_cert_reqs': ssl.CERT_NONE,
+        'ssl_ca_certs': None
+    },
+    
+    # Connection settings
+    broker_connection_retry_on_startup=True,
+    broker_connection_max_retries=None
+)
 
 #Store file information 
 download_records = {}
@@ -92,5 +108,4 @@ def cleanup_file(file_id):
 
         
 if __name__ == "__main__":
-    # Example usage
-    download_video()
+    app.start()
