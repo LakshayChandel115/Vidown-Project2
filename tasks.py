@@ -7,11 +7,15 @@ import yt_dlp
 import os
 import uuid
 from datetime import datetime,timedelta
+
+# Fix Redis URL format - remove redis-cli --tls -u part
+redis_url = 'redis://default:AU1xAAIncDIyYTQwZTQwODliYjc0YTI1OGQ5Y2ExMDg3ZmNiODZlOHAyMTk4MjU@trusted-woodcock-19825.upstash.io:6379'
+
 #We are using redis as message broker and backend both.
 
 app = Celery('tasks',
-             broker='redis-cli --tls -u redis://default:AU1xAAIncDIyYTQwZTQwODliYjc0YTI1OGQ5Y2ExMDg3ZmNiODZlOHAyMTk4MjU@trusted-woodcock-19825.upstash.io:6379', 
-             backend='redis-cli --tls -u redis://default:AU1xAAIncDIyYTQwZTQwODliYjc0YTI1OGQ5Y2ExMDg3ZmNiODZlOHAyMTk4MjU@trusted-woodcock-19825.upstash.io:6379'
+             broker=redis_url,
+             backend=redis_url
              )
 
 #Store file information 
@@ -22,6 +26,11 @@ def download_video(video_url, quality_choice):
     try:
         # Generate unique ID for this download
         file_id = str(uuid.uuid4())
+        
+        #Create base download directory if it does not exist
+        base_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'downloads')
+        if not os.path.exists(base_path):
+            os.makedirs(base_path)
         
         # Set download folder path (temporary storage on render)
         download_path = os.path.join('temp_downloads', file_id)
